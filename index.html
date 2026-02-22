@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDEX 매출 분석 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #818CF8;
+            --primary-dark: #3730A3;
+            --secondary: #06B6D4;
+            --accent: #F59E0B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #1E293B;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+        }
+
+        .header-content {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1 i {
+            font-size: 24px;
+        }
+
+        .editable-title {
+            cursor: pointer;
+            border-bottom: 2px dashed rgba(255,255,255,0.3);
+            padding-bottom: 2px;
+            transition: border-color 0.2s;
+        }
+
+        .editable-title:hover {
+            border-bottom-color: rgba(255,255,255,0.8);
+        }
+
+        .edit-icon {
+            font-size: 13px !important;
+            opacity: 0.4;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-left: 4px;
+        }
+
+        .edit-icon:hover {
+            opacity: 1;
+        }
+
+        .title-input {
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 6px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: inherit;
+            padding: 4px 10px;
+            outline: none;
+            width: 420px;
+            max-width: 60vw;
+        }
+
+        .title-input:focus {
+            border-color: white;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .title-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .editable-sub {
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(255,255,255,0.2);
+            padding-bottom: 1px;
+            transition: border-color 0.2s;
+        }
+
+        .editable-sub:hover {
+            border-bottom-color: rgba(255,255,255,0.7);
+        }
+
+        .sub-input {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+            font-family: inherit;
+            padding: 2px 8px;
+            outline: none;
+            width: 200px;
+        }
+
+        .sub-input:focus {
+            border-color: white;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .header-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Main Layout */
+        .main {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 32px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--card);
+            padding: 4px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .tab:hover {
+            background: #F1F5F9;
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Sub-tabs inside mega tab */
+        .sub-tabs {
+            display: flex;
+            gap: 2px;
+            background: #F1F5F9;
+            padding: 3px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .sub-tab {
+            padding: 9px 18px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sub-tab:hover { background: #E2E8F0; color: var(--text); }
+        .sub-tab.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .sub-tab i { font-size: 12px; }
+        .sub-panel { display: none; }
+        .sub-panel.active { display: block; }
+
+        /* Drag & Drop for tabs */
+        .tab[draggable="true"], .sub-tab[draggable="true"] { cursor: grab; user-select: none; }
+        .tab[draggable="true"]:active, .sub-tab[draggable="true"]:active { cursor: grabbing; }
+        .tab.drag-over, .sub-tab.drag-over {
+            box-shadow: -3px 0 0 0 var(--primary);
+            background: rgba(79,70,229,0.08);
+        }
+        .tab.dragging, .sub-tab.dragging { opacity: 0.4; }
+        .tabs .drag-hint, .sub-tabs .drag-hint {
+            display: none;
+            font-size: 11px;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        .tabs:hover .drag-hint, .sub-tabs:hover .drag-hint { display: flex; }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        select, .search-input {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            background: var(--card);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, .search-input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-input {
+            width: 220px;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .kpi-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .kpi-icon.blue { background: #EEF2FF; color: var(--primary); }
+        .kpi-icon.cyan { background: #ECFEFF; color: var(--secondary); }
+        .kpi-icon.amber { background: #FFFBEB; color: var(--accent); }
+        .kpi-icon.green { background: #ECFDF5; color: var(--success); }
+
+        .kpi-change {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .kpi-change.up { background: #ECFDF5; color: var(--success); }
+        .kpi-change.down { background: #FEF2F2; color: var(--danger); }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Chart Grid */
+        .chart-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-1-2 { grid-template-columns: 1fr 2fr; }
+        .grid-2-1 { grid-template-columns: 2fr 1fr; }
+
+        .chart-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-title i {
+            color: var(--primary);
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            background: #F8FAFC;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .data-table tbody tr:hover {
+            background: #F8FAFC;
+        }
+
+        .data-table tbody tr.active-row {
+            background: #EEF2FF;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .rank-1 { background: #FEF3C7; color: #D97706; }
+        .rank-2 { background: #E2E8F0; color: #475569; }
+        .rank-3 { background: #FED7AA; color: #C2410C; }
+        .rank-default { background: #F1F5F9; color: #64748B; }
+
+        .store-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* 매출 상세 테이블: 매장명 고정 + 금액 줄바꿈 방지 */
+        #sales-detail-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #sales-detail-table thead th:first-child,
+        #sales-detail-table tbody td:first-child,
+        #sales-qty-table thead th:first-child,
+        #sales-qty-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            min-width: 130px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+        }
+        #sales-detail-table thead th:first-child,
+        #sales-qty-table thead th:first-child {
+            background: #F8FAFC;
+            z-index: 3;
+        }
+        #sales-detail-table tbody tr:hover td:first-child,
+        #sales-qty-table tbody tr:hover td:first-child {
+            background: #F8FAFC;
+        }
+        #sales-detail-table td,
+        #sales-detail-table th,
+        #sales-qty-table td,
+        #sales-qty-table th {
+            white-space: nowrap;
+            font-size: 11.5px;
+            padding: 9px 10px;
+        }
+        #sales-detail-table tbody tr:last-child td:first-child,
+        #sales-qty-table tbody tr:last-child td:first-child {
+            background: #F8FAFC;
+        }
+
+        /* 일별 매출 테이블: 날짜 열 고정 */
+        #daily-sales-table thead th:first-child,
+        #daily-sales-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            min-width: 100px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+        }
+        #daily-sales-table thead th:first-child {
+            background: #F8FAFC;
+            z-index: 3;
+        }
+        #daily-sales-table tbody tr:hover td:first-child {
+            background: #F8FAFC;
+        }
+        #daily-sales-table td, #daily-sales-table th {
+            white-space: nowrap;
+            font-size: 11.5px;
+            padding: 8px 10px;
+        }
+
+        .store-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .type-dept { background: #EEF2FF; color: var(--primary); }
+        .type-mall { background: #ECFEFF; color: #0891B2; }
+        .type-outlet { background: #FEF3C7; color: #D97706; }
+
+        .bar-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mini-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: #E2E8F0;
+            flex: 1;
+            max-width: 100px;
+            overflow: hidden;
+        }
+
+        .mini-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--primary);
+            transition: width 0.5s ease;
+        }
+
+        .table-scroll {
+            max-height: 650px;
+            overflow-y: auto;
+        }
+
+        /* Gender bar */
+        .gender-bar {
+            display: flex;
+            height: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 120px;
+        }
+
+        .gender-male { background: #60A5FA; }
+        .gender-female { background: #F472B6; }
+
+        /* Region map-like grid */
+        .region-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .region-item {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .region-item:hover {
+            border-color: var(--primary);
+            background: #EEF2FF;
+            transform: translateY(-1px);
+        }
+
+        .region-item.selected {
+            border-color: var(--primary);
+            background: #EEF2FF;
+            box-shadow: 0 0 0 2px rgba(79,70,229,0.2);
+        }
+
+        .region-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .region-sales {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .region-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .detail-panel h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .detail-stat {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .detail-stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .detail-stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Tab Panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Legend */
+        .custom-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .grid-2, .grid-3, .grid-1-2, .grid-2-1 { grid-template-columns: 1fr; }
+            .region-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .main { padding: 16px; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            .region-grid { grid-template-columns: repeat(2, 1fr); }
+            .header { padding: 16px; }
+            .header-content { flex-direction: column; gap: 8px; }
+            .detail-stats { grid-template-columns: 1fr; }
+        }
+
+        /* Timeline */
+        .ns-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .ns-year-group {
+            position: relative;
+            padding-left: 28px;
+            padding-bottom: 8px;
+        }
+
+        .ns-year-group::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 28px;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .ns-year-group:last-child::before { display: none; }
+
+        .ns-year-label {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ns-year-label::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .ns-year-label .year-count {
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--primary);
+            color: white;
+            padding: 1px 8px;
+            border-radius: 10px;
+        }
+
+        .ns-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .ns-item {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            transition: all 0.2s;
+            cursor: default;
+        }
+
+        .ns-item:hover {
+            border-color: var(--primary-light);
+            background: #EEF2FF;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .ns-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .ns-item-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .ns-item-company {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        .company-신세계 { background: #FEF3C7; color: #92400E; }
+        .company-신세계프라퍼티 { background: #DBEAFE; color: #1E40AF; }
+        .company-현대 { background: #D1FAE5; color: #065F46; }
+        .company-롯데 { background: #FCE7F3; color: #9D174D; }
+        .company-한화갤러리아 { background: #E0E7FF; color: #3730A3; }
+
+        .ns-item-location {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ns-item-meta {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .ns-tag {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #E2E8F0;
+            color: #475569;
+        }
+
+        .ns-tag.type-tag { background: #EEF2FF; color: var(--primary); }
+
+        .ns-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .status-착공중 { background: #DBEAFE; color: #1D4ED8; }
+        .status-개점완료 { background: #D1FAE5; color: #059669; }
+        .status-계획중 { background: #FEF3C7; color: #D97706; }
+        .status-미정 { background: #F1F5F9; color: #64748B; }
+
+        /* HDEX Fit Badges */
+        .fit-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .fit-excellent { background: #D1FAE5; color: #059669; }
+        .fit-good { background: #DBEAFE; color: #1D4ED8; }
+        .fit-fair { background: #FEF3C7; color: #D97706; }
+        .fit-poor { background: #FEE2E2; color: #DC2626; }
+
+        .score-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-fill-bg {
+            width: 80px;
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Monthly Ranking Table */
+        .ranking-cell {
+            padding: 6px 8px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            font-size: 12px;
+            position: relative;
+            min-width: 110px;
+        }
+        .ranking-store-name {
+            font-weight: 600;
+            font-size: 11.5px;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .ranking-sales {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 1px;
+        }
+        .ranking-rank {
+            width: 30px;
+            text-align: center !important;
+            font-weight: 800;
+            font-size: 13px;
+            background: #F8FAFC !important;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+        .rank-gold { color: #D97706; }
+        .rank-silver { color: #6B7280; }
+        .rank-bronze { color: #92400E; }
+        .ranking-change {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+        .ranking-up { color: #059669; }
+        .ranking-down { color: #DC2626; }
+        .ranking-same { color: #9CA3AF; }
+        .ranking-new { color: #7C3AED; }
+
+        #sales-ranking-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #F1F5F9;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        #sales-ranking-table thead th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 4;
+        }
+        #sales-ranking-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+        .ranking-highlight-1 { background: linear-gradient(135deg, #FEF3C7, #FDE68A) !important; }
+        .ranking-highlight-2 { background: linear-gradient(135deg, #F1F5F9, #E5E7EB) !important; }
+        .ranking-highlight-3 { background: linear-gradient(135deg, #FED7AA, #FDBA74) !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .tooltip-custom {
+            font-family: 'Pretendard', sans-serif !important;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-content">
+        <h1><i class="fas fa-cash-register"></i> HDEX 매출 분석 대시보드</h1>
+        <div class="header-meta">
+            <span><i class="fas fa-database"></i> 데이터: 2025 엑셀 확정 / 2026 Supabase</span>
+            <span><i class="fas fa-clock"></i> 최종 업데이트: 2026.02.12</span>
+        </div>
+    </div>
+</header>
+<main class="main">
+    <!-- 상단 탭 네비게이션 -->
+    <div class="tabs" style="margin-bottom:20px">
+        <button class="tab active" data-tab="sales" onclick="switchMainTab('sales')"><i class="fas fa-chart-line"></i> 매출 분석</button>
+        <button class="tab" data-tab="daily" onclick="switchMainTab('daily')"><i class="fas fa-calendar-day"></i> 일별 매출</button>
+    </div>
+
+<div id="tab-sales" class="tab-panel active">
+        <!-- KPI -->
+        <div class="kpi-grid animate-in">
+            <div class="kpi-card"><div class="kpi-icon" style="background:linear-gradient(135deg,#4F46E5,#7C3AED)"><i class="fas fa-won-sign"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-total">로딩중...</div><div class="kpi-label">조회기간 총 매출</div></div></div>
+            <div class="kpi-card" id="sales-kpi-target-card" style="display:none"><div class="kpi-icon" style="background:linear-gradient(135deg,#059669,#10B981)"><i class="fas fa-bullseye"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-target">-</div><div class="kpi-label" id="sales-kpi-target-label">연간 목표</div></div></div>
+            <div class="kpi-card" id="sales-kpi-rate-card" style="display:none"><div class="kpi-icon" style="background:linear-gradient(135deg,#D97706,#F59E0B)"><i class="fas fa-chart-line"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-rate" style="font-size:22px">-</div><div class="kpi-label">목표 달성률</div></div></div>
+            <div class="kpi-card" id="sales-kpi-qty-card"><div class="kpi-icon" style="background:linear-gradient(135deg,#059669,#10B981)"><i class="fas fa-calendar-alt"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-qty">-</div><div class="kpi-label">월평균 매출</div></div></div>
+            <div class="kpi-card"><div class="kpi-icon" style="background:linear-gradient(135deg,#D97706,#F59E0B)"><i class="fas fa-store"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-stores">-</div><div class="kpi-label">매장 수</div></div></div>
+            <div class="kpi-card"><div class="kpi-icon" style="background:linear-gradient(135deg,#DC2626,#EF4444)"><i class="fas fa-receipt"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-avg">-</div><div class="kpi-label">매장 평균 연매출</div></div></div>
+            <div class="kpi-card" id="sales-kpi-totalqty-card"><div class="kpi-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-boxes"></i></div><div class="kpi-content"><div class="kpi-value" id="sales-kpi-totalqty">-</div><div class="kpi-label">총 판매수량</div></div></div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar animate-in">
+            <div class="filter-group">
+                <label>조회기간:</label>
+                <select id="sales-period" onchange="loadSalesData()">
+                    <option value="2026">2026년 (Supabase)</option>
+                    <option value="2025">2025년 (확정)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>매장:</label>
+                <select id="sales-store-filter" onchange="renderSalesCharts()">
+                    <option value="all">전체 오프라인</option>
+                </select>
+            </div>
+            <div class="filter-group" style="margin-left:auto">
+                <button onclick="salesDataLoaded=false;loadSalesData()" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600"><i class="fas fa-sync-alt"></i> 새로고침</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="sales-loading" class="chart-card animate-in" style="text-align:center;padding:60px;display:none">
+            <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary);margin-bottom:12px;display:block"></i>
+            <div style="font-size:16px;font-weight:600;color:var(--text-primary)">데이터 로딩 중...</div>
+            <div id="sales-loading-progress" style="font-size:13px;color:var(--text-secondary);margin-top:4px">매출 데이터를 불러오고 있습니다</div>
+            <div style="margin-top:12px;width:200px;height:4px;background:#E2E8F0;border-radius:2px;display:inline-block;overflow:hidden"><div id="sales-loading-bar" style="width:0%;height:100%;background:var(--primary);border-radius:2px;transition:width 0.3s"></div></div>
+        </div>
+
+        <!-- Charts Row 1: Monthly Trend -->
+        <div id="sales-content" style="display:none">
+            <div class="chart-card animate-in" style="margin-bottom:20px">
+                <div class="chart-title"><i class="fas fa-chart-line"></i> 월별 매출 추이</div>
+                <div class="chart-container" style="height:320px">
+                    <canvas id="chart-sales-monthly"></canvas>
+                </div>
+            </div>
+
+            <!-- Charts Row 2: Store Comparison + Category -->
+            <div class="chart-grid grid-2 animate-in" style="margin-bottom:20px">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-bar"></i> 매장별 매출 비교</div>
+                    <div class="chart-container" style="height:360px">
+                        <canvas id="chart-sales-store"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-pie"></i> 매장별 매출 비중</div>
+                    <div class="chart-container" style="height:360px">
+                        <canvas id="chart-sales-pie"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Achievement Chart (2026 only) -->
+            <div id="sales-target-section" class="chart-card animate-in" style="margin-bottom:20px;display:none">
+                <div class="chart-title"><i class="fas fa-bullseye"></i> 매장별 목표 달성률</div>
+                <div class="chart-container" style="height:420px">
+                    <canvas id="chart-sales-target"></canvas>
+                </div>
+            </div>
+
+            <!-- Charts Row 3: Store Monthly Detail -->
+            <div class="chart-card animate-in" style="margin-bottom:20px">
+                <div class="chart-title"><i class="fas fa-th"></i> 매장별 월별 매출 상세</div>
+                <div class="table-scroll" style="max-height:500px;overflow-x:auto">
+                    <table class="data-table" id="sales-detail-table">
+                        <thead id="sales-detail-thead"></thead>
+                        <tbody id="sales-detail-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quantity Detail Table -->
+            <div class="chart-card animate-in" style="margin-bottom:20px">
+                <div class="chart-title"><i class="fas fa-boxes"></i> 매장별 월별 판매수량 상세</div>
+                <div id="sales-qty-notice" style="display:none;padding:12px 16px;background:#FEF3C7;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400E"><i class="fas fa-info-circle"></i> 2025년 데이터는 엑셀 확정 매출 기준으로 판매수량 정보가 포함되어 있지 않습니다.</div>
+                <div class="table-scroll" style="max-height:500px;overflow-x:auto">
+                    <table class="data-table" id="sales-qty-table">
+                        <thead id="sales-qty-thead"></thead>
+                        <tbody id="sales-qty-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monthly Store Ranking Table -->
+            <div class="chart-card animate-in" style="margin-bottom:20px" id="sales-ranking-section">
+                <div class="chart-title"><i class="fas fa-trophy"></i> 월별 매장 매출 순위 (1~18위)</div>
+                <div class="chart-subtitle" id="sales-ranking-subtitle">매월 매출 기준 매장 순위 변동 현황</div>
+                <div class="table-scroll" style="max-height:700px;overflow-x:auto">
+                    <table class="data-table" id="sales-ranking-table">
+                        <thead id="sales-ranking-thead"></thead>
+                        <tbody id="sales-ranking-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Row 4: Qty & Category -->
+            <div class="chart-grid grid-2 animate-in">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-bar"></i> 매장별 월평균 매출</div>
+                    <div class="chart-container" style="height:320px">
+                        <canvas id="chart-sales-qty"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-tags"></i> 매장별 연간 매출 비중</div>
+                    <div class="chart-container" style="height:320px">
+                        <canvas id="chart-sales-category"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 탭: 일별 매출 (가로=매장명, 세로=날짜) -->
+    <div id="tab-daily" class="tab-panel">
+        <div class="chart-card animate-in" style="margin-bottom:20px">
+            <div class="chart-title"><i class="fas fa-calendar-day"></i> 2026년 일별 매출 (매장별)</div>
+            <div class="chart-subtitle" id="daily-subtitle">Supabase에 업데이트된 일자까지 표시 · 매장명 가로, 일자 세로</div>
+            <div id="daily-loading" style="text-align:center;padding:40px;display:none">
+                <i class="fas fa-spinner fa-spin" style="font-size:28px;color:var(--primary);margin-bottom:12px;display:block"></i>
+                <div style="font-size:14px;font-weight:600">일별 매출 데이터 로딩 중...</div>
+                <div id="daily-loading-progress" style="font-size:12px;color:var(--text-secondary);margin-top:4px"></div>
+                <div style="margin-top:12px;width:200px;height:4px;background:#E2E8F0;border-radius:2px;display:inline-block;overflow:hidden"><div id="daily-loading-bar" style="width:0%;height:100%;background:var(--primary);border-radius:2px;transition:width 0.3s"></div></div>
+            </div>
+            <div id="daily-content" style="display:none">
+                <div class="filter-bar" style="margin-bottom:16px">
+                    <button onclick="loadDailyData()" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600"><i class="fas fa-sync-alt"></i> 새로고침</button>
+                    <span id="daily-info" style="font-size:13px;color:var(--text-secondary);margin-left:12px"></span>
+                </div>
+                <div class="table-scroll" style="max-height:700px;overflow:auto">
+                    <table class="data-table" id="daily-sales-table">
+                        <thead id="daily-sales-thead"></thead>
+                        <tbody id="daily-sales-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+<script>
+// =====================================================
+// CHART DEFAULTS
+// =====================================================
+Chart.defaults.font.family = "'Pretendard', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748B';
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(30,41,59,0.92)';
+Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 13, family: "'Pretendard', sans-serif" };
+Chart.defaults.plugins.tooltip.bodyFont = { size: 12, family: "'Pretendard', sans-serif" };
+Chart.defaults.plugins.tooltip.padding = 10;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyle = 'rectRounded';
+
+const COLORS = {
+    primary: '#4F46E5',
+    primaryLight: '#818CF8',
+    secondary: '#06B6D4',
+    accent: '#F59E0B',
+    success: '#10B981',
+    danger: '#EF4444',
+    purple: '#8B5CF6',
+    pink: '#EC4899',
+    male: '#60A5FA',
+    female: '#F472B6',
+    ages: ['#818CF8', '#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA']
+};
+
+let chartInstances = {};
+
+function destroyChart(id) {
+    if (chartInstances[id]) {
+        chartInstances[id].destroy();
+        delete chartInstances[id];
+    }
+}
+
+// =====================================================
+// TAB 7: HDEX 매출 분석 (2025 엑셀 확정 + 2026 Supabase)
+// =====================================================
+const SUPABASE_URL = 'https://nrfeorrwdjzzgpvwqtql.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yZmVvcnJ3ZGp6emdwdndxdHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwNjEzODEsImV4cCI6MjA4MjYzNzM4MX0.jovOet82RUuDnReU-UbA-QWTmxlX7FFcGbQqDZT8TLc';
+
+async function sbFetch(params) {
+    const url = `${SUPABASE_URL}/rest/v1/sales_online?${params}`;
+    const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    return res.json();
+}
+
+let salesDataLoaded = false;
+let salesRawData = [];
+
+// 엑셀 기준 확정 매출 데이터 (매장별 월별 매출액 2025.xlsx)
+const HDEX_SALES_2025 = {
+    '더현대 서울':       { '2025-01':102543350,'2025-02':96787800,'2025-03':121698750,'2025-04':128478000,'2025-05':138202280,'2025-06':135046260,'2025-07':156194350,'2025-08':126286500,'2025-09':163763000,'2025-10':122551000,'2025-11':95542100,'2025-12':101917300 },
+    'HYM DOSAN':         { '2025-01':89347600,'2025-02':83823200,'2025-03':126338700,'2025-04':134880550,'2025-05':144948900,'2025-06':146530900,'2025-07':154980600,'2025-08':138886000,'2025-09':163575300,'2025-10':180763800,'2025-11':152517300,'2025-12':133809500 },
+    '롯데몰 잠실':       { '2025-01':68842750,'2025-02':57703900,'2025-03':71157900,'2025-04':73104400,'2025-05':101785600,'2025-06':96035960,'2025-07':110820800,'2025-08':95150600,'2025-09':66060100,'2025-10':82227000,'2025-11':65394300,'2025-12':59983500 },
+    '롯데 동부산아울렛':  { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':85267950,'2025-05':109803200,'2025-06':151111900,'2025-07':134635300,'2025-08':160805150,'2025-09':97227500,'2025-10':107689200,'2025-11':83237100,'2025-12':78799700 },
+    '롯데 기흥아울렛':    { '2025-01':0,'2025-02':0,'2025-03':27589100,'2025-04':77217400,'2025-05':103534100,'2025-06':100447100,'2025-07':111738500,'2025-08':105921150,'2025-09':71894800,'2025-10':116050400,'2025-11':82954300,'2025-12':71845000 },
+    '신세계 광주':        { '2025-01':50000400,'2025-02':47723100,'2025-03':67583200,'2025-04':68739200,'2025-05':78519800,'2025-06':70997600,'2025-07':73490500,'2025-08':71119150,'2025-09':59394700,'2025-10':74518000,'2025-11':48894900,'2025-12':46070900 },
+    '롯데 부산본점':      { '2025-01':34161150,'2025-02':42584500,'2025-03':52286600,'2025-04':51301700,'2025-05':66065100,'2025-06':71345500,'2025-07':76400200,'2025-08':86087100,'2025-09':60015200,'2025-10':73809500,'2025-11':54390900,'2025-12':54393400 },
+    '현대 중동':          { '2025-01':45491850,'2025-02':42969100,'2025-03':50005600,'2025-04':55190500,'2025-05':77109600,'2025-06':78847600,'2025-07':67911900,'2025-08':70825550,'2025-09':44875200,'2025-10':58439800,'2025-11':39626600,'2025-12':42639700 },
+    '신세계 센텀시티몰':  { '2025-01':36685100,'2025-02':44593500,'2025-03':55454000,'2025-04':55269200,'2025-05':68716000,'2025-06':69084300,'2025-07':67997700,'2025-08':75524200,'2025-09':47998700,'2025-10':55664500,'2025-11':45478300,'2025-12':40020700 },
+    '현대 커넥트 청주':   { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':0,'2025-05':0,'2025-06':53358900,'2025-07':153245600,'2025-08':117024500,'2025-09':85852500,'2025-10':97890300,'2025-11':76999900,'2025-12':71765000 },
+    '더현대 대구':        { '2025-01':35891350,'2025-02':36878100,'2025-03':61783000,'2025-04':55048700,'2025-05':59128900,'2025-06':58783000,'2025-07':67678300,'2025-08':60100300,'2025-09':46716100,'2025-10':54056300,'2025-11':38488100,'2025-12':35860900 },
+    '현대 울산':          { '2025-01':32436600,'2025-02':36261600,'2025-03':52928400,'2025-04':52990100,'2025-05':55011200,'2025-06':48891700,'2025-07':53107300,'2025-08':43030300,'2025-09':30032100,'2025-10':40617000,'2025-11':27326700,'2025-12':29503400 },
+    '신세계 강남':        { '2025-01':27753000,'2025-02':22188000,'2025-03':35829800,'2025-04':30017600,'2025-05':42992900,'2025-06':44464600,'2025-07':48882100,'2025-08':50188800,'2025-09':31151600,'2025-10':39011000,'2025-11':25584100,'2025-12':30397000 },
+    '타임빌라스 수원':    { '2025-01':26336450,'2025-02':27071500,'2025-03':37785100,'2025-04':31256000,'2025-05':38752020,'2025-06':39260670,'2025-07':35945200,'2025-08':30382600,'2025-09':21428000,'2025-10':24899300,'2025-11':23307100,'2025-12':20301100 },
+    'HDEX 한남':          { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':0,'2025-05':6805000,'2025-06':50101200,'2025-07':38826880,'2025-08':48732850,'2025-09':66087500,'2025-10':61850200,'2025-11':51193200,'2025-12':44867300 },
+    '현대 송도아울렛':    { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':0,'2025-05':0,'2025-06':0,'2025-07':0,'2025-08':0,'2025-09':62582300,'2025-10':85994000,'2025-11':66501600,'2025-12':59081000 },
+    '제주 하얏트':        { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':0,'2025-05':4842000,'2025-06':5552200,'2025-07':6999400,'2025-08':8032200,'2025-09':6760400,'2025-10':4632000,'2025-11':2662700,'2025-12':4390600 },
+    'HDEX 홍대':          { '2025-01':0,'2025-02':0,'2025-03':0,'2025-04':0,'2025-05':0,'2025-06':0,'2025-07':0,'2025-08':0,'2025-09':0,'2025-10':0,'2025-11':0,'2025-12':29874900 }
+};
+
+// 26년 매출 목표 (엑셀 기준 확정, 19개 매장: 기존 18 + 스타필드 수원 신규)
+const HDEX_TARGETS_2026 = {
+    '더현대 서울':       {'2026-01':100000000,'2026-02':100000000,'2026-03':120000000,'2026-04':130000000,'2026-05':140000000,'2026-06':130000000,'2026-07':140000000,'2026-08':140000000,'2026-09':130000000,'2026-10':130000000,'2026-11':100000000,'2026-12':100000000},
+    'HYM DOSAN':         {'2026-01':100000000,'2026-02':100000000,'2026-03':130000000,'2026-04':140000000,'2026-05':150000000,'2026-06':150000000,'2026-07':150000000,'2026-08':140000000,'2026-09':170000000,'2026-10':200000000,'2026-11':160000000,'2026-12':120000000},
+    '롯데몰 잠실':       {'2026-01':60000000,'2026-02':60000000,'2026-03':70000000,'2026-04':70000000,'2026-05':100000000,'2026-06':100000000,'2026-07':100000000,'2026-08':100000000,'2026-09':100000000,'2026-10':80000000,'2026-11':70000000,'2026-12':70000000},
+    '타임빌라스 수원':    {'2026-01':30000000,'2026-02':30000000,'2026-03':40000000,'2026-04':40000000,'2026-05':40000000,'2026-06':40000000,'2026-07':30000000,'2026-08':30000000,'2026-09':30000000,'2026-10':30000000,'2026-11':30000000,'2026-12':30000000},
+    '신세계 센텀시티몰':  {'2026-01':40000000,'2026-02':50000000,'2026-03':60000000,'2026-04':60000000,'2026-05':70000000,'2026-06':70000000,'2026-07':70000000,'2026-08':70000000,'2026-09':60000000,'2026-10':50000000,'2026-11':50000000,'2026-12':40000000},
+    '신세계 광주':        {'2026-01':50000000,'2026-02':50000000,'2026-03':60000000,'2026-04':60000000,'2026-05':80000000,'2026-06':70000000,'2026-07':70000000,'2026-08':70000000,'2026-09':60000000,'2026-10':50000000,'2026-11':50000000,'2026-12':50000000},
+    '신세계 강남':        {'2026-01':30000000,'2026-02':30000000,'2026-03':40000000,'2026-04':40000000,'2026-05':40000000,'2026-06':40000000,'2026-07':30000000,'2026-08':30000000,'2026-09':30000000,'2026-10':30000000,'2026-11':30000000,'2026-12':30000000},
+    '현대 중동':          {'2026-01':40000000,'2026-02':50000000,'2026-03':60000000,'2026-04':60000000,'2026-05':80000000,'2026-06':80000000,'2026-07':70000000,'2026-08':70000000,'2026-09':60000000,'2026-10':50000000,'2026-11':50000000,'2026-12':40000000},
+    '더현대 대구':        {'2026-01':30000000,'2026-02':40000000,'2026-03':60000000,'2026-04':60000000,'2026-05':60000000,'2026-06':60000000,'2026-07':60000000,'2026-08':60000000,'2026-09':50000000,'2026-10':40000000,'2026-11':40000000,'2026-12':40000000},
+    '현대 울산':          {'2026-01':30000000,'2026-02':40000000,'2026-03':60000000,'2026-04':60000000,'2026-05':60000000,'2026-06':60000000,'2026-07':50000000,'2026-08':50000000,'2026-09':50000000,'2026-10':40000000,'2026-11':30000000,'2026-12':30000000},
+    '롯데 부산본점':      {'2026-01':40000000,'2026-02':50000000,'2026-03':60000000,'2026-04':60000000,'2026-05':70000000,'2026-06':70000000,'2026-07':70000000,'2026-08':70000000,'2026-09':60000000,'2026-10':50000000,'2026-11':50000000,'2026-12':40000000},
+    '롯데 기흥아울렛':    {'2026-01':60000000,'2026-02':70000000,'2026-03':80000000,'2026-04':100000000,'2026-05':120000000,'2026-06':100000000,'2026-07':100000000,'2026-08':100000000,'2026-09':90000000,'2026-10':100000000,'2026-11':90000000,'2026-12':80000000},
+    '롯데 동부산아울렛':  {'2026-01':100000000,'2026-02':100000000,'2026-03':120000000,'2026-04':130000000,'2026-05':140000000,'2026-06':150000000,'2026-07':140000000,'2026-08':140000000,'2026-09':100000000,'2026-10':120000000,'2026-11':90000000,'2026-12':100000000},
+    'HDEX 한남':          {'2026-01':60000000,'2026-02':60000000,'2026-03':60000000,'2026-04':60000000,'2026-05':60000000,'2026-06':60000000,'2026-07':60000000,'2026-08':60000000,'2026-09':60000000,'2026-10':60000000,'2026-11':60000000,'2026-12':60000000},
+    'HDEX 한남 우먼':     {'2026-01':40000000,'2026-02':40000000,'2026-03':40000000,'2026-04':40000000,'2026-05':40000000,'2026-06':40000000,'2026-07':40000000,'2026-08':40000000,'2026-09':40000000,'2026-10':40000000,'2026-11':40000000,'2026-12':40000000},
+    '현대 커넥트 청주':   {'2026-01':100000000,'2026-02':100000000,'2026-03':120000000,'2026-04':130000000,'2026-05':140000000,'2026-06':140000000,'2026-07':140000000,'2026-08':140000000,'2026-09':100000000,'2026-10':100000000,'2026-11':90000000,'2026-12':100000000},
+    '현대 송도아울렛':    {'2026-01':70000000,'2026-02':70000000,'2026-03':90000000,'2026-04':100000000,'2026-05':120000000,'2026-06':100000000,'2026-07':100000000,'2026-08':100000000,'2026-09':100000000,'2026-10':100000000,'2026-11':90000000,'2026-12':80000000},
+    'HDEX 홍대':          {'2026-01':90000000,'2026-02':100000000,'2026-03':120000000,'2026-04':120000000,'2026-05':140000000,'2026-06':100000000,'2026-07':100000000,'2026-08':100000000,'2026-09':120000000,'2026-10':150000000,'2026-11':100000000,'2026-12':100000000},
+    '스타필드 수원':      {'2026-01':0,'2026-02':0,'2026-03':0,'2026-04':80000000,'2026-05':80000000,'2026-06':90000000,'2026-07':90000000,'2026-08':90000000,'2026-09':90000000,'2026-10':90000000,'2026-11':70000000,'2026-12':70000000}
+};
+
+// 일별 매출 탭: 매장 정렬 순서 (Supabase store_name과 매칭)
+const DAILY_STORE_ORDER = [
+    '더현대 서울', '롯데몰 잠실', '타임빌라스 수원', '신세계 센텀시티몰', '신세계 광주', '신세계 강남',
+    '현대 중동', '더현대 대구', '현대 울산', 'HYM DOSAN', '롯데 부산본점', '롯데 기흥아울렛',
+    '롯데 동부산아울렛', '현대 커넥트 청주', '현대 송도아울렛', 'HDEX 홍대', 'HDEX 한남', 'HDEX 한남 우먼'
+];
+
+// HDEX 오프라인 매장명 목록 (2025: 18개, 2026: 19개 포함)
+const HDEX_STORE_NAMES = Object.keys(HDEX_SALES_2025);
+const HDEX_STORE_NAMES_2026 = Object.keys(HDEX_TARGETS_2026);
+const storeFilterParam = 'store_name=in.(' + HDEX_STORE_NAMES.map(s => `"${s}"`).join(',') + ')';
+const storeFilterParam2026 = 'store_name=in.(' + HDEX_STORE_NAMES_2026.map(s => `"${s}"`).join(',') + ')';
+
+// 매장별 보정 비율 (엑셀확정 / Supabase) - 2025 학습 후 2026 적용
+let storeCalibration = {}; // { storeName: ratio }
+let calibrationReady = false;
+
+// Supabase 페이징 fetch 공통 함수
+async function fetchSupabaseYear(year, bar, prog, filterParam) {
+    const useFilter = filterParam || storeFilterParam;
+    const startDate = `${year}-01-01`;
+    const endDate = `${year}-12-31`;
+    let allRows = [];
+    let offset = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        try {
+            const data = await sbFetch(
+                `select=sale_date,store_name,sale_quantity,actual_sale_amount` +
+                `&sale_date=gte.${startDate}&sale_date=lte.${endDate}` +
+                `&${useFilter}` +
+                `&order=sale_date.asc&limit=${pageSize}&offset=${offset}`
+            );
+            if (!data || data.length === 0) { hasMore = false; break; }
+            allRows = allRows.concat(data);
+            offset += pageSize;
+            if (bar) bar.style.width = Math.min(85, 15 + (offset / 5000) * 70) + '%';
+            if (prog) prog.textContent = `${year}년 ${allRows.length.toLocaleString()}건 로드됨...`;
+            if (data.length < pageSize) hasMore = false;
+        } catch (e) {
+            console.error('Fetch error:', e);
+            hasMore = false;
+        }
+    }
+    return allRows;
+}
+
+// Supabase 로우 → 매장+월별 집계
+function aggregateRows(rows, allowedNames) {
+    const allowed = allowedNames || HDEX_STORE_NAMES;
+    const agg = {};
+    rows.forEach(row => {
+        const store = row.store_name;
+        if (!allowed.includes(store)) return;
+        const month = row.sale_date ? row.sale_date.substring(0, 7) : 'unknown';
+        const key = `${store}|${month}`;
+        if (!agg[key]) agg[key] = { store, month, totalSales: 0, totalQty: 0, count: 0 };
+        agg[key].totalSales += (row.actual_sale_amount || 0);
+        agg[key].totalQty += (row.sale_quantity || 0);
+        agg[key].count += 1;
+    });
+    return Object.values(agg);
+}
+
+// 2025 Supabase 데이터를 가져와 엑셀과 비교 → 매장별 보정비율 학습
+async function learnCalibration(bar, prog) {
+    if (calibrationReady) return;
+    if (prog) prog.textContent = '2025년 Supabase 데이터로 보정비율 학습 중...';
+    if (bar) bar.style.width = '10%';
+
+    const rows2025 = await fetchSupabaseYear('2025', bar, prog);
+    const sbAgg = aggregateRows(rows2025);
+
+    // 매장별 Supabase 연간 합계
+    const sbYearly = {};
+    sbAgg.forEach(d => {
+        sbYearly[d.store] = (sbYearly[d.store] || 0) + d.totalSales;
+    });
+
+    // 매장별 엑셀 연간 합계
+    const excelYearly = {};
+    Object.entries(HDEX_SALES_2025).forEach(([store, months]) => {
+        excelYearly[store] = Object.values(months).reduce((a, b) => a + b, 0);
+    });
+
+    // 보정 비율 계산: 엑셀확정 / Supabase
+    storeCalibration = {};
+    console.log('\n=== 매장별 보정비율 학습 결과 ===');
+    HDEX_STORE_NAMES.forEach(store => {
+        const exVal = excelYearly[store] || 0;
+        const sbVal = sbYearly[store] || 0;
+        const ratio = sbVal > 0 ? exVal / sbVal : 1;
+        storeCalibration[store] = ratio;
+        const diffPct = sbVal > 0 ? ((ratio - 1) * 100).toFixed(2) : '-';
+        console.log(`[보정] ${store}: 엑셀=${(exVal/10000).toFixed(0)}만 | SB=${(sbVal/10000).toFixed(0)}만 | 비율=${ratio.toFixed(4)} (${diffPct}%)`);
+    });
+
+    calibrationReady = true;
+    console.log('=== 보정비율 학습 완료 ===\n');
+}
+
+async function loadSalesData() {
+    const loading = document.getElementById('sales-loading');
+    const content = document.getElementById('sales-content');
+    const bar = document.getElementById('sales-loading-bar');
+    const prog = document.getElementById('sales-loading-progress');
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    bar.style.width = '5%';
+
+    const periodVal = document.getElementById('sales-period').value;
+
+    if (periodVal === '2025') {
+        // ── 2025년: 엑셀 확정 데이터 사용 ──
+        prog.textContent = '2025년 확정 매출 데이터 로딩 중...';
+        bar.style.width = '50%';
+
+        // 동시에 보정비율도 백그라운드 학습 (2026 전환 시 즉시 사용)
+        learnCalibration(null, null).catch(e => console.warn('보정학습 실패:', e));
+
+        const agg = [];
+        Object.entries(HDEX_SALES_2025).forEach(([store, months]) => {
+            Object.entries(months).forEach(([month, sales]) => {
+                agg.push({ store, month, totalSales: sales, totalQty: 0, count: sales > 0 ? 1 : 0 });
+            });
+        });
+
+        salesRawData = agg;
+        salesRawData._categories = {};
+        salesRawData._totalRows = agg.length;
+        salesDataLoaded = true;
+
+    } else {
+        // ── 2026년: Supabase 조회 + 보정비율 적용 ──
+        // 1단계: 보정비율 학습 (아직 안 했으면)
+        if (!calibrationReady) {
+            await learnCalibration(bar, prog);
+        }
+
+        // 2단계: 2026 데이터 fetch
+        prog.textContent = '2026년 Supabase 데이터 로딩 중...';
+        bar.style.width = '50%';
+
+        const rows2026 = await fetchSupabaseYear('2026', bar, prog, storeFilterParam2026);
+
+        bar.style.width = '90%';
+        prog.textContent = `${rows2026.length.toLocaleString()}건 집계 + 보정 중...`;
+
+        // 3단계: 집계 + 보정비율 적용
+        const rawAgg = aggregateRows(rows2026, HDEX_STORE_NAMES_2026);
+        rawAgg.forEach(d => {
+            const ratio = storeCalibration[d.store] || 1;
+            d.totalSales = Math.round(d.totalSales * ratio);
+        });
+
+        // 월별 마지막 데이터 날짜 추적
+        const monthMaxDate = {};
+        rows2026.forEach(row => {
+            if (!row.sale_date) return;
+            const month = row.sale_date.substring(0, 7);
+            const day = parseInt(row.sale_date.substring(8, 10));
+            if (!monthMaxDate[month] || day > monthMaxDate[month]) monthMaxDate[month] = day;
+        });
+
+        salesRawData = rawAgg;
+        salesRawData._categories = {};
+        salesRawData._totalRows = rows2026.length;
+        salesRawData._monthMaxDate = monthMaxDate;
+        salesDataLoaded = true;
+
+        // 콘솔에 보정 결과 출력
+        console.log('=== 2026년 보정 적용 결과 ===');
+        rawAgg.forEach(d => {
+            const ratio = storeCalibration[d.store] || 1;
+            console.log(`[2026] ${d.store} | ${d.month} | ${d.totalSales.toLocaleString()}원 (보정비율: ${ratio.toFixed(4)})`);
+        });
+    }
+
+    bar.style.width = '100%';
+    prog.textContent = '완료!';
+
+    // Build store filter
+    const storeSet = [...new Set(salesRawData.map(d => d.store))].sort();
+    const sf = document.getElementById('sales-store-filter');
+    sf.innerHTML = '<option value="all">전체 오프라인 (' + storeSet.length + '개)</option>';
+    storeSet.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sf.appendChild(opt);
+    });
+
+    setTimeout(() => {
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        renderSalesCharts();
+    }, 300);
+}
+
+function renderSalesCharts() {
+    if (!salesDataLoaded) return;
+
+    const storeFilter = document.getElementById('sales-store-filter').value;
+
+    let filtered = salesRawData.filter(d => {
+        if (storeFilter !== 'all' && d.store !== storeFilter) return false;
+        return true;
+    });
+
+    // KPIs
+    const totalSales = filtered.reduce((s, d) => s + d.totalSales, 0);
+    const totalQty = filtered.reduce((s, d) => s + d.totalQty, 0);
+    const totalCount = filtered.reduce((s, d) => s + d.count, 0);
+    const stores = [...new Set(filtered.map(d => d.store))];
+
+    document.getElementById('sales-kpi-total').textContent = totalSales >= 100000000 ? (totalSales / 100000000).toFixed(1) + '억' : (totalSales / 10000).toLocaleString() + '만원';
+    // 월평균 매출
+    const activeMonths = [...new Set(filtered.filter(d => d.totalSales > 0).map(d => d.month))];
+    document.getElementById('sales-kpi-qty').textContent = activeMonths.length > 0 ? (totalSales / activeMonths.length / 100000000).toFixed(1) + '억' : '-';
+    document.getElementById('sales-kpi-stores').textContent = stores.length + '개';
+    // 매장 평균 매출
+    document.getElementById('sales-kpi-avg').textContent = stores.length > 0 ? (totalSales / stores.length / 100000000).toFixed(1) + '억' : '-';
+    // 총 판매수량
+    document.getElementById('sales-kpi-totalqty').textContent = totalQty > 0 ? totalQty.toLocaleString() + '개' : '-';
+    document.getElementById('sales-kpi-totalqty-card').style.display = totalQty > 0 ? '' : 'none';
+
+    // 26년 목표 달성률 KPI
+    const periodVal = document.getElementById('sales-period').value;
+    const is2026 = periodVal === '2026';
+    document.getElementById('sales-kpi-target-card').style.display = is2026 ? '' : 'none';
+    document.getElementById('sales-kpi-rate-card').style.display = is2026 ? '' : 'none';
+    document.getElementById('sales-kpi-qty-card').style.display = is2026 ? 'none' : '';
+    document.getElementById('sales-target-section').style.display = is2026 ? '' : 'none';
+
+    let targetTotalYear = 0, targetTotalByMonth = 0;
+    if (is2026) {
+        // 데이터 있는 월까지의 목표만 합산 (공정한 비교)
+        const dataMonths = activeMonths;
+        stores.forEach(store => {
+            const t = HDEX_TARGETS_2026[store];
+            if (!t) return;
+            if (storeFilter === 'all') {
+                targetTotalYear += Object.values(t).reduce((a, b) => a + b, 0);
+                dataMonths.forEach(m => { targetTotalByMonth += (t[m] || 0); });
+            } else {
+                targetTotalYear += Object.values(t).reduce((a, b) => a + b, 0);
+                dataMonths.forEach(m => { targetTotalByMonth += (t[m] || 0); });
+            }
+        });
+        document.getElementById('sales-kpi-target').textContent = targetTotalYear >= 100000000 ? (targetTotalYear / 100000000).toFixed(0) + '억' : '-';
+        const rate = targetTotalByMonth > 0 ? (totalSales / targetTotalByMonth * 100) : 0;
+        const rateEl = document.getElementById('sales-kpi-rate');
+        rateEl.textContent = rate > 0 ? rate.toFixed(1) + '%' : '-';
+        rateEl.style.color = rate >= 100 ? '#059669' : rate >= 80 ? '#D97706' : '#DC2626';
+        document.getElementById('sales-kpi-target-label').textContent = '연간 목표 (' + (targetTotalYear / 100000000).toFixed(0) + '억)';
+    }
+
+    // Get months sorted
+    const months = [...new Set(filtered.map(d => d.month))].sort();
+
+    // 1. Monthly trend line chart
+    const monthlyTotal = {};
+    months.forEach(m => { monthlyTotal[m] = 0; });
+    filtered.forEach(d => { monthlyTotal[d.month] = (monthlyTotal[d.month] || 0) + d.totalSales; });
+
+    // 26년 목표 월별 합산
+    const monthlyTarget = {};
+    if (is2026) {
+        months.forEach(m => { monthlyTarget[m] = 0; });
+        stores.forEach(store => {
+            const t = HDEX_TARGETS_2026[store];
+            if (t) months.forEach(m => { monthlyTarget[m] += (t[m] || 0); });
+        });
+        // 목표가 있지만 실적 데이터에 없는 월도 표시 (12개월 전체)
+        for (let mo = 1; mo <= 12; mo++) {
+            const mk = '2026-' + String(mo).padStart(2, '0');
+            if (!months.includes(mk)) {
+                months.push(mk);
+                monthlyTotal[mk] = 0;
+                monthlyTarget[mk] = 0;
+                stores.forEach(store => {
+                    const t = HDEX_TARGETS_2026[store];
+                    if (t) monthlyTarget[mk] += (t[mk] || 0);
+                });
+            }
+        }
+        months.sort();
+    }
+
+    const monthlyDatasets = [{
+        label: '월 매출 실적',
+        data: months.map(m => monthlyTotal[m]),
+        backgroundColor: months.map((m, i) => {
+            if (is2026 && monthlyTotal[m] === 0) return 'rgba(79,70,229,0.15)';
+            return i === months.length - 1 || (is2026 && months.filter(mm => monthlyTotal[mm] > 0).length > 0 && m === months.filter(mm => monthlyTotal[mm] > 0).pop()) ? 'rgba(79,70,229,0.9)' : 'rgba(79,70,229,0.5)';
+        }),
+        borderRadius: 6, order: 2
+    }];
+    if (is2026) {
+        monthlyDatasets.push({
+            label: '월 목표',
+            data: months.map(m => monthlyTarget[m]),
+            type: 'line',
+            borderColor: '#EF4444',
+            backgroundColor: 'rgba(239,68,68,0.1)',
+            borderWidth: 2,
+            borderDash: [6, 3],
+            pointRadius: 4,
+            pointBackgroundColor: '#EF4444',
+            fill: false,
+            order: 1
+        });
+    }
+
+    destroyChart('chart-sales-monthly');
+    chartInstances['chart-sales-monthly'] = new Chart(document.getElementById('chart-sales-monthly'), {
+        type: 'bar',
+        data: {
+            labels: months.map(m => m.replace('-', '.')),
+            datasets: monthlyDatasets
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: is2026, position: 'top', labels: { boxWidth: 14, font: { size: 11 } } },
+                datalabels: { display: ctx => ctx.dataset.type !== 'line',
+                    anchor: 'end', align: 'end', color: '#4F46E5', font: { weight: 'bold', size: 10 },
+                    formatter: v => v >= 100000000 ? (v / 100000000).toFixed(1) + '억' : v > 0 ? (v / 10000).toFixed(0) + '만' : '' }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { callback: v => (v / 100000000).toFixed(1) + '억' } },
+                x: { grid: { display: false } }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // 2. Store comparison bar (horizontal)
+    const storeTotals = {};
+    filtered.forEach(d => { storeTotals[d.store] = (storeTotals[d.store] || 0) + d.totalSales; });
+    const sortedStores = Object.entries(storeTotals).sort((a, b) => b[1] - a[1]);
+    const storeColors = sortedStores.map((_, i) => [
+        '#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6',
+        '#06B6D4', '#EF4444', '#84CC16', '#F97316', '#6366F1', '#14B8A6',
+        '#D946EF', '#0EA5E9', '#22C55E', '#A855F7', '#E11D48', '#0D9488',
+        '#7C3AED', '#FB923C', '#2563EB', '#059669', '#DC2626', '#8B5CF6'
+    ][i % 24]);
+
+    destroyChart('chart-sales-store');
+    chartInstances['chart-sales-store'] = new Chart(document.getElementById('chart-sales-store'), {
+        type: 'bar',
+        data: {
+            labels: sortedStores.map(s => s[0]),
+            datasets: [{ data: sortedStores.map(s => s[1]), backgroundColor: storeColors, borderRadius: 6 }]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { anchor: 'end', align: 'end', color: '#1E293B', font: { weight: 'bold', size: 10 },
+                    formatter: v => v >= 100000000 ? (v / 100000000).toFixed(1) + '억' : (v / 10000).toFixed(0) + '만' }
+            },
+            scales: { x: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { callback: v => (v / 100000000).toFixed(1) + '억' } }, y: { grid: { display: false } } }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // 3. Store pie
+    destroyChart('chart-sales-pie');
+    chartInstances['chart-sales-pie'] = new Chart(document.getElementById('chart-sales-pie'), {
+        type: 'doughnut',
+        data: {
+            labels: sortedStores.map(s => s[0]),
+            datasets: [{ data: sortedStores.map(s => s[1]), backgroundColor: storeColors, borderWidth: 0, hoverOffset: 8 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                datalabels: { display: ctx => { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); return ctx.dataset.data[ctx.dataIndex] / total > 0.05; },
+                    color: '#fff', font: { weight: 'bold', size: 11 },
+                    formatter: (v, ctx) => { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); return (v / total * 100).toFixed(1) + '%'; } }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // === 매장별 목표 달성률 차트 (2026 only) ===
+    if (is2026) {
+        const targetRates = [];
+        const allTargetStores = storeFilter === 'all' ? HDEX_STORE_NAMES_2026 : stores;
+        allTargetStores.forEach(store => {
+            const t = HDEX_TARGETS_2026[store];
+            if (!t) return;
+            const actual = filtered.filter(d => d.store === store).reduce((s, d) => s + d.totalSales, 0);
+            const activeM = filtered.filter(d => d.store === store && d.totalSales > 0).map(d => d.month);
+            const targetSoFar = activeM.reduce((s, m) => s + (t[m] || 0), 0);
+            const yearTarget = Object.values(t).reduce((a, b) => a + b, 0);
+            const rate = targetSoFar > 0 ? (actual / targetSoFar * 100) : 0;
+            targetRates.push({ store, actual, targetSoFar, yearTarget, rate });
+        });
+        targetRates.sort((a, b) => b.rate - a.rate);
+
+        destroyChart('chart-sales-target');
+        chartInstances['chart-sales-target'] = new Chart(document.getElementById('chart-sales-target'), {
+            type: 'bar',
+            data: {
+                labels: targetRates.map(d => d.store),
+                datasets: [{
+                    label: '달성률 (%)',
+                    data: targetRates.map(d => d.rate),
+                    backgroundColor: targetRates.map(d => d.rate >= 100 ? '#059669' : d.rate >= 80 ? '#F59E0B' : '#EF4444'),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { anchor: 'end', align: 'end', color: '#1E293B', font: { weight: 'bold', size: 11 },
+                        formatter: v => v.toFixed(1) + '%' }
+                },
+                scales: {
+                    x: { beginAtZero: true, max: Math.max(120, ...targetRates.map(d => d.rate + 10)), grid: { color: (ctx) => ctx.tick && ctx.tick.value === 100 ? '#DC2626' : '#F1F5F9' }, ticks: { callback: v => v + '%' } },
+                    y: { grid: { display: false } }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    } else {
+        destroyChart('chart-sales-target');
+    }
+
+    // 4. Detail table (store x month)
+    const thead = document.getElementById('sales-detail-thead');
+    const tbody = document.getElementById('sales-detail-tbody');
+    const monthMaxDate = salesRawData._monthMaxDate || {};
+
+    // 2026 헤더에 목표/달성률 컬럼 추가
+    const extraHeaders = is2026 ? '<th style="background:#FEF3C7"><strong>연간목표</strong></th><th style="background:#DCFCE7"><strong>달성률</strong></th>' : '';
+    thead.innerHTML = '<tr><th>매장</th>' + months.map(m => {
+        const label = m.replace('-', '.');
+        const maxDay = monthMaxDate[m];
+        const [y, mo] = m.split('-').map(Number);
+        const lastDayOfMonth = new Date(y, mo, 0).getDate();
+        if (maxDay && maxDay < lastDayOfMonth) {
+            return `<th>${label}<br><span style="font-size:10px;color:#6366F1;font-weight:500">(~${maxDay}일)</span></th>`;
+        }
+        return `<th>${label}</th>`;
+    }).join('') + '<th style="background:#EEF2FF"><strong>합계</strong></th>' + extraHeaders + '</tr>';
+    tbody.innerHTML = '';
+
+    // 매장별 월별 매출 상세: 지정된 매장 순서 사용 (차트는 기존대로 매출 순)
+    let allDisplayStores;
+    if (is2026) {
+        const inOrder = DAILY_STORE_ORDER.filter(s => HDEX_STORE_NAMES_2026.includes(s) || filtered.some(d => d.store === s));
+        const others = HDEX_STORE_NAMES_2026.filter(s => !DAILY_STORE_ORDER.includes(s));
+        allDisplayStores = [...inOrder, ...others];
+    } else {
+        const inOrder = DAILY_STORE_ORDER.filter(s => filtered.some(d => d.store === s));
+        const others = [...new Set(filtered.map(d => d.store))].filter(s => !DAILY_STORE_ORDER.includes(s));
+        allDisplayStores = [...inOrder, ...others];
+    }
+
+    allDisplayStores.forEach(store => {
+        // 실적 행
+        const tr = document.createElement('tr');
+        let rowTotal = 0;
+        let cells = `<td class="store-name" style="white-space:nowrap">${store}</td>`;
+        months.forEach(m => {
+            const d = filtered.find(r => r.store === store && r.month === m);
+            const val = d ? d.totalSales : 0;
+            rowTotal += val;
+            cells += `<td style="text-align:right">${val > 0 ? val.toLocaleString() + '원' : '-'}</td>`;
+        });
+        cells += `<td style="text-align:right;background:#EEF2FF;font-weight:700">${rowTotal > 0 ? rowTotal.toLocaleString() + '원' : '-'}</td>`;
+        if (is2026) {
+            const t = HDEX_TARGETS_2026[store];
+            const yearTarget = t ? Object.values(t).reduce((a, b) => a + b, 0) : 0;
+            const activeM = filtered.filter(d => d.store === store && d.totalSales > 0).map(d => d.month);
+            const targetSoFar = t ? activeM.reduce((s, m) => s + (t[m] || 0), 0) : 0;
+            const rate = targetSoFar > 0 ? (rowTotal / targetSoFar * 100) : 0;
+            cells += `<td style="text-align:right;background:#FEF3C7;font-weight:600">${yearTarget > 0 ? (yearTarget / 100000000).toFixed(0) + '억' : '-'}</td>`;
+            const rColor = rate >= 100 ? '#059669' : rate >= 80 ? '#D97706' : '#DC2626';
+            cells += `<td style="text-align:right;background:#DCFCE7;font-weight:700;color:${rColor}">${rate > 0 ? rate.toFixed(1) + '%' : '-'}</td>`;
+        }
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+
+        // 2026 목표 행 (sub-row)
+        if (is2026) {
+            const t = HDEX_TARGETS_2026[store];
+            if (t) {
+                const ttr = document.createElement('tr');
+                ttr.style.cssText = 'background:#FFFBEB;font-size:11px;color:#92400E';
+                let tcells = `<td class="store-name" style="white-space:nowrap;font-style:italic;padding-left:20px;background:#FFFBEB">└ 목표</td>`;
+                let tRowTotal = 0;
+                months.forEach(m => {
+                    const tv = t[m] || 0;
+                    tRowTotal += tv;
+                    tcells += `<td style="text-align:right">${tv > 0 ? tv.toLocaleString() + '원' : '-'}</td>`;
+                });
+                tcells += `<td style="text-align:right;background:#FEF3C7;font-weight:600">${tRowTotal.toLocaleString()}원</td>`;
+                tcells += '<td></td><td></td>';
+                ttr.innerHTML = tcells;
+                tbody.appendChild(ttr);
+            }
+        }
+
+        // 전년 매출 행 (sub-row) — 2026 뷰: 2025 확정 데이터 비교
+        if (is2026) {
+            const prevData = HDEX_SALES_2025[store];
+            if (prevData) {
+                // 전년 매출 행
+                const pytr = document.createElement('tr');
+                pytr.style.cssText = 'background:#EFF6FF;font-size:11px;color:#1E40AF';
+                let pyCells = `<td class="store-name" style="white-space:nowrap;font-style:italic;padding-left:20px;background:#EFF6FF">└ 전년</td>`;
+                let pyRowTotal = 0;
+                months.forEach(m => {
+                    const prevMonth = m.replace(/^\d{4}/, '2025');
+                    const pv = prevData[prevMonth] || 0;
+                    pyRowTotal += pv;
+                    pyCells += `<td style="text-align:right">${pv > 0 ? pv.toLocaleString() + '원' : '-'}</td>`;
+                });
+                pyCells += `<td style="text-align:right;background:#DBEAFE;font-weight:600">${pyRowTotal > 0 ? pyRowTotal.toLocaleString() + '원' : '-'}</td>`;
+                pyCells += '<td></td><td></td>';
+                pytr.innerHTML = pyCells;
+                tbody.appendChild(pytr);
+
+                // 전년비 성장률 행
+                const grtr = document.createElement('tr');
+                grtr.style.cssText = 'background:#F0FDF4;font-size:11px;font-weight:600';
+                let grCells = `<td class="store-name" style="white-space:nowrap;font-style:italic;padding-left:20px;background:#F0FDF4;color:#065F46">└ 전년비</td>`;
+                months.forEach(m => {
+                    const d = filtered.find(r => r.store === store && r.month === m);
+                    const curVal = d ? d.totalSales : 0;
+                    const prevMonth = m.replace(/^\d{4}/, '2025');
+                    const prevVal = prevData[prevMonth] || 0;
+                    if (curVal > 0 && prevVal > 0) {
+                        const growthRate = ((curVal - prevVal) / prevVal * 100);
+                        const grColor = growthRate >= 0 ? '#059669' : '#DC2626';
+                        const arrow = growthRate >= 0 ? '▲' : '▼';
+                        grCells += `<td style="text-align:right;color:${grColor}">${arrow}${Math.abs(growthRate).toFixed(1)}%</td>`;
+                    } else if (curVal > 0 && prevVal === 0) {
+                        grCells += `<td style="text-align:right;color:#7C3AED">NEW</td>`;
+                    } else {
+                        grCells += `<td style="text-align:right;color:#9CA3AF">-</td>`;
+                    }
+                });
+                // 합계 성장률
+                if (rowTotal > 0 && pyRowTotal > 0) {
+                    const totalGrowth = ((rowTotal - pyRowTotal) / pyRowTotal * 100);
+                    const tgColor = totalGrowth >= 0 ? '#059669' : '#DC2626';
+                    const tgArrow = totalGrowth >= 0 ? '▲' : '▼';
+                    grCells += `<td style="text-align:right;background:#DCFCE7;font-weight:700;color:${tgColor}">${tgArrow}${Math.abs(totalGrowth).toFixed(1)}%</td>`;
+                } else {
+                    grCells += `<td style="text-align:right;background:#DCFCE7">-</td>`;
+                }
+                grCells += '<td></td><td></td>';
+                grtr.innerHTML = grCells;
+                tbody.appendChild(grtr);
+            }
+        }
+    });
+
+    // Total row
+    const totalTr = document.createElement('tr');
+    totalTr.style.cssText = 'background:#F8FAFC;font-weight:700;border-top:2px solid var(--primary)';
+    let totalCells = '<td style="background:#F8FAFC">합계</td>';
+    let grandTotal = 0;
+    months.forEach(m => {
+        const val = monthlyTotal[m] || 0;
+        grandTotal += val;
+        totalCells += `<td style="text-align:right;color:var(--primary)">${val.toLocaleString()}원</td>`;
+    });
+    totalCells += `<td style="text-align:right;background:#EEF2FF;color:var(--primary)">${grandTotal.toLocaleString()}원</td>`;
+    if (is2026) {
+        totalCells += `<td style="text-align:right;background:#FEF3C7;color:var(--primary);font-weight:700">${(targetTotalYear / 100000000).toFixed(0)}억</td>`;
+        const totalRate = targetTotalByMonth > 0 ? (grandTotal / targetTotalByMonth * 100) : 0;
+        const totalRColor = totalRate >= 100 ? '#059669' : totalRate >= 80 ? '#D97706' : '#DC2626';
+        totalCells += `<td style="text-align:right;background:#DCFCE7;font-weight:700;color:${totalRColor}">${totalRate > 0 ? totalRate.toFixed(1) + '%' : '-'}</td>`;
+    }
+    totalTr.innerHTML = totalCells;
+    tbody.appendChild(totalTr);
+
+    // 목표 합계 행 (2026 only)
+    if (is2026) {
+        const targetTotalTr = document.createElement('tr');
+        targetTotalTr.style.cssText = 'background:#FFFBEB;font-weight:600;font-size:11px;color:#92400E';
+        let targetTotalCells = '<td style="background:#FFFBEB;font-style:italic;padding-left:20px">└ 목표 합계</td>';
+        let targetGrandTotal = 0;
+        months.forEach(m => {
+            let mTarget = 0;
+            allDisplayStores.forEach(store => {
+                const t = HDEX_TARGETS_2026[store];
+                if (t) mTarget += (t[m] || 0);
+            });
+            targetGrandTotal += mTarget;
+            targetTotalCells += `<td style="text-align:right">${mTarget > 0 ? mTarget.toLocaleString() + '원' : '-'}</td>`;
+        });
+        targetTotalCells += `<td style="text-align:right;background:#FEF3C7">${targetGrandTotal.toLocaleString()}원</td>`;
+        targetTotalCells += '<td></td><td></td>';
+        targetTotalTr.innerHTML = targetTotalCells;
+        tbody.appendChild(targetTotalTr);
+
+        // 전년 합계 행
+        const pyTotalTr = document.createElement('tr');
+        pyTotalTr.style.cssText = 'background:#EFF6FF;font-weight:600;font-size:11px;color:#1E40AF';
+        let pyTotalCells = '<td style="background:#EFF6FF;font-style:italic;padding-left:20px">└ 전년 합계</td>';
+        let pyGrandTotal = 0;
+        months.forEach(m => {
+            let mPrevTotal = 0;
+            const prevMonth = m.replace(/^\d{4}/, '2025');
+            allDisplayStores.forEach(store => {
+                const pd = HDEX_SALES_2025[store];
+                if (pd) mPrevTotal += (pd[prevMonth] || 0);
+            });
+            pyGrandTotal += mPrevTotal;
+            pyTotalCells += `<td style="text-align:right">${mPrevTotal > 0 ? mPrevTotal.toLocaleString() + '원' : '-'}</td>`;
+        });
+        pyTotalCells += `<td style="text-align:right;background:#DBEAFE;font-weight:700">${pyGrandTotal > 0 ? pyGrandTotal.toLocaleString() + '원' : '-'}</td>`;
+        pyTotalCells += '<td></td><td></td>';
+        pyTotalTr.innerHTML = pyTotalCells;
+        tbody.appendChild(pyTotalTr);
+
+        // 전년비 성장률 합계 행
+        const grTotalTr = document.createElement('tr');
+        grTotalTr.style.cssText = 'background:#F0FDF4;font-weight:700;font-size:11px';
+        let grTotalCells = '<td style="background:#F0FDF4;font-style:italic;padding-left:20px;color:#065F46">└ 전년비</td>';
+        months.forEach(m => {
+            const curVal = monthlyTotal[m] || 0;
+            let prevMTotal = 0;
+            const prevMonth = m.replace(/^\d{4}/, '2025');
+            allDisplayStores.forEach(store => {
+                const pd = HDEX_SALES_2025[store];
+                if (pd) prevMTotal += (pd[prevMonth] || 0);
+            });
+            if (curVal > 0 && prevMTotal > 0) {
+                const gr = ((curVal - prevMTotal) / prevMTotal * 100);
+                const grC = gr >= 0 ? '#059669' : '#DC2626';
+                const grA = gr >= 0 ? '▲' : '▼';
+                grTotalCells += `<td style="text-align:right;color:${grC}">${grA}${Math.abs(gr).toFixed(1)}%</td>`;
+            } else {
+                grTotalCells += `<td style="text-align:right;color:#9CA3AF">-</td>`;
+            }
+        });
+        if (grandTotal > 0 && pyGrandTotal > 0) {
+            const totalGr = ((grandTotal - pyGrandTotal) / pyGrandTotal * 100);
+            const tgrC = totalGr >= 0 ? '#059669' : '#DC2626';
+            const tgrA = totalGr >= 0 ? '▲' : '▼';
+            grTotalCells += `<td style="text-align:right;background:#DCFCE7;font-weight:700;color:${tgrC}">${tgrA}${Math.abs(totalGr).toFixed(1)}%</td>`;
+        } else {
+            grTotalCells += `<td style="text-align:right;background:#DCFCE7">-</td>`;
+        }
+        grTotalCells += '<td></td><td></td>';
+        grTotalTr.innerHTML = grTotalCells;
+        tbody.appendChild(grTotalTr);
+    }
+
+    // 4-2. 판매수량 상세 테이블
+    const qtyThead = document.getElementById('sales-qty-thead');
+    const qtyTbody = document.getElementById('sales-qty-tbody');
+    const qtyNotice = document.getElementById('sales-qty-notice');
+    const hasQtyData = totalQty > 0;
+    qtyNotice.style.display = hasQtyData ? 'none' : '';
+
+    if (hasQtyData) {
+        const qtyMonths = months.filter(m => filtered.some(d => d.month === m && d.totalQty > 0));
+        const qtyMonthMaxDate = salesRawData._monthMaxDate || {};
+
+        qtyThead.innerHTML = '<tr><th>매장</th>' + qtyMonths.map(m => {
+            const label = m.replace('-', '.');
+            const maxDay = qtyMonthMaxDate[m];
+            const [y, mo] = m.split('-').map(Number);
+            const lastDayOfMonth = new Date(y, mo, 0).getDate();
+            if (maxDay && maxDay < lastDayOfMonth) {
+                return `<th>${label}<br><span style="font-size:10px;color:#7C3AED;font-weight:500">(~${maxDay}일)</span></th>`;
+            }
+            return `<th>${label}</th>`;
+        }).join('') + '<th style="background:#F3E8FF"><strong>합계</strong></th></tr>';
+        qtyTbody.innerHTML = '';
+
+        // 매장별 수량 집계
+        const storeQtyTotals = {};
+        filtered.forEach(d => { storeQtyTotals[d.store] = (storeQtyTotals[d.store] || 0) + d.totalQty; });
+        const sortedQtyStores = Object.entries(storeQtyTotals).filter(([_, q]) => q > 0).sort((a, b) => b[1] - a[1]);
+
+        sortedQtyStores.forEach(([store]) => {
+            const tr = document.createElement('tr');
+            let rowTotal = 0;
+            let cells = `<td class="store-name" style="white-space:nowrap">${store}</td>`;
+            qtyMonths.forEach(m => {
+                const d = filtered.find(r => r.store === store && r.month === m);
+                const val = d ? d.totalQty : 0;
+                rowTotal += val;
+                cells += `<td style="text-align:right">${val > 0 ? val.toLocaleString() + '개' : '-'}</td>`;
+            });
+            cells += `<td style="text-align:right;background:#F3E8FF;font-weight:700">${rowTotal.toLocaleString()}개</td>`;
+            tr.innerHTML = cells;
+            qtyTbody.appendChild(tr);
+        });
+
+        // 수량 합계 행
+        const qtyTotalTr = document.createElement('tr');
+        qtyTotalTr.style.cssText = 'background:#F8FAFC;font-weight:700;border-top:2px solid #7C3AED';
+        let qtyTotalCells = '<td style="background:#F8FAFC">합계</td>';
+        let qtyGrandTotal = 0;
+        qtyMonths.forEach(m => {
+            const val = filtered.reduce((s, d) => d.month === m ? s + d.totalQty : s, 0);
+            qtyGrandTotal += val;
+            qtyTotalCells += `<td style="text-align:right;color:#7C3AED">${val.toLocaleString()}개</td>`;
+        });
+        qtyTotalCells += `<td style="text-align:right;background:#F3E8FF;color:#7C3AED">${qtyGrandTotal.toLocaleString()}개</td>`;
+        qtyTotalTr.innerHTML = qtyTotalCells;
+        qtyTbody.appendChild(qtyTotalTr);
+    } else {
+        qtyThead.innerHTML = '';
+        qtyTbody.innerHTML = '';
+    }
+
+    // 4-3. 월별 매장 매출 순위 테이블 (1~18위)
+    renderMonthlyRanking(filtered, months);
+
+    // 5. 매장별 월평균 매출 차트
+    const storeMonthAvg = {};
+    const storeActiveMonths = {};
+    filtered.forEach(d => {
+        if (d.totalSales > 0) {
+            storeMonthAvg[d.store] = (storeMonthAvg[d.store] || 0) + d.totalSales;
+            storeActiveMonths[d.store] = (storeActiveMonths[d.store] || 0) + 1;
+        }
+    });
+    const sortedAvg = Object.entries(storeMonthAvg).map(([s, total]) => [s, Math.round(total / (storeActiveMonths[s] || 1))]).sort((a, b) => b[1] - a[1]);
+
+    destroyChart('chart-sales-qty');
+    chartInstances['chart-sales-qty'] = new Chart(document.getElementById('chart-sales-qty'), {
+        type: 'bar',
+        data: {
+            labels: sortedAvg.map(s => s[0]),
+            datasets: [{ data: sortedAvg.map(s => s[1]), backgroundColor: '#10B981', borderRadius: 6 }]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'end', font: { weight: 'bold', size: 10 },
+                formatter: v => v >= 100000000 ? (v / 100000000).toFixed(1) + '억' : Math.round(v / 10000).toLocaleString() + '만' } },
+            scales: { x: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { callback: v => (v / 100000000).toFixed(1) + '억' } }, y: { grid: { display: false } } }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // 6. Category chart - 매장별 연간 매출 비중으로 대체
+    const storeYearly = {};
+    filtered.forEach(d => { storeYearly[d.store] = (storeYearly[d.store] || 0) + d.totalSales; });
+    const sortedYearly = Object.entries(storeYearly).sort((a, b) => b[1] - a[1]);
+    const catColors = ['#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#06B6D4', '#EF4444', '#84CC16', '#F97316',
+        '#6366F1', '#14B8A6', '#D946EF', '#0EA5E9', '#22C55E', '#A855F7', '#E11D48', '#0D9488'];
+
+    destroyChart('chart-sales-category');
+    chartInstances['chart-sales-category'] = new Chart(document.getElementById('chart-sales-category'), {
+        type: 'doughnut',
+        data: {
+            labels: sortedYearly.map(c => c[0]),
+            datasets: [{ data: sortedYearly.map(c => c[1]), backgroundColor: catColors, borderWidth: 0 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } },
+                datalabels: { display: ctx => { const t = ctx.dataset.data.reduce((a, b) => a + b, 0); return ctx.dataset.data[ctx.dataIndex] / t > 0.04; },
+                    color: '#fff', font: { weight: 'bold', size: 10 },
+                    formatter: (v, ctx) => { const t = ctx.dataset.data.reduce((a, b) => a + b, 0); return (v / t * 100).toFixed(1) + '%'; } }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+// =====================================================
+// MONTHLY STORE RANKING
+// =====================================================
+function renderMonthlyRanking(filtered, months) {
+    const thead = document.getElementById('sales-ranking-thead');
+    const tbody = document.getElementById('sales-ranking-tbody');
+    if (!thead || !tbody) return;
+
+    // 데이터가 있는 월만 필터
+    const activeMonths = months.filter(m => filtered.some(d => d.month === m && d.totalSales > 0));
+    if (activeMonths.length === 0) {
+        thead.innerHTML = '';
+        tbody.innerHTML = '<tr><td style="padding:40px;text-align:center;color:var(--text-secondary)">매출 데이터가 없습니다</td></tr>';
+        return;
+    }
+
+    const monthMaxDate = salesRawData._monthMaxDate || {};
+
+    // 월별 매장 매출 집계 & 정렬
+    const monthlyRankData = {}; // { month: [{store, sales, rank}] }
+    activeMonths.forEach(m => {
+        const storeSales = {};
+        filtered.forEach(d => {
+            if (d.month === m && d.totalSales > 0) {
+                storeSales[d.store] = (storeSales[d.store] || 0) + d.totalSales;
+            }
+        });
+        const sorted = Object.entries(storeSales)
+            .sort((a, b) => b[1] - a[1])
+            .map(([store, sales], i) => ({ store, sales, rank: i + 1 }));
+        monthlyRankData[m] = sorted;
+    });
+
+    // 최대 18위까지
+    const maxRank = 18;
+
+    // 헤더 생성
+    let headerHTML = '<tr><th class="ranking-rank">순위</th>';
+    activeMonths.forEach(m => {
+        const label = m.replace('-', '.');
+        const maxDay = monthMaxDate[m];
+        const [y, mo] = m.split('-').map(Number);
+        const lastDayOfMonth = new Date(y, mo, 0).getDate();
+        if (maxDay && maxDay < lastDayOfMonth) {
+            headerHTML += `<th>${label}<br><span style="font-size:10px;color:#6366F1;font-weight:500">(~${maxDay}일)</span></th>`;
+        } else {
+            headerHTML += `<th>${label}</th>`;
+        }
+    });
+    headerHTML += '</tr>';
+    thead.innerHTML = headerHTML;
+
+    // 바디 생성 (행: 1~18위, 열: 월)
+    tbody.innerHTML = '';
+    // 매장별 색상 맵
+    const allStores = [...new Set(filtered.map(d => d.store))];
+    const storeColorMap = {};
+    const rankColors = [
+        '#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6',
+        '#06B6D4', '#EF4444', '#84CC16', '#F97316', '#6366F1', '#14B8A6',
+        '#D946EF', '#0EA5E9', '#22C55E', '#A855F7', '#E11D48', '#0D9488'
+    ];
+    allStores.forEach((s, i) => { storeColorMap[s] = rankColors[i % rankColors.length]; });
+
+    for (let rank = 1; rank <= maxRank; rank++) {
+        const tr = document.createElement('tr');
+
+        // 순위 셀
+        let rankClass = '';
+        let rankIcon = '';
+        if (rank === 1) { rankClass = 'rank-gold'; rankIcon = '🥇'; }
+        else if (rank === 2) { rankClass = 'rank-silver'; rankIcon = '🥈'; }
+        else if (rank === 3) { rankClass = 'rank-bronze'; rankIcon = '🥉'; }
+
+        let cells = `<td class="ranking-rank ${rankClass}">${rankIcon || rank}</td>`;
+
+        activeMonths.forEach((m, mi) => {
+            const rankData = monthlyRankData[m];
+            const entry = rankData.find(d => d.rank === rank);
+
+            if (!entry) {
+                cells += '<td class="ranking-cell" style="color:#CBD5E1">-</td>';
+                return;
+            }
+
+            // 이전 월 대비 순위 변동 계산
+            let changeHTML = '';
+            if (mi > 0) {
+                const prevMonth = activeMonths[mi - 1];
+                const prevData = monthlyRankData[prevMonth];
+                const prevEntry = prevData.find(d => d.store === entry.store);
+
+                if (!prevEntry) {
+                    changeHTML = '<span class="ranking-change ranking-new">NEW</span>';
+                } else if (prevEntry.rank > entry.rank) {
+                    const diff = prevEntry.rank - entry.rank;
+                    changeHTML = `<span class="ranking-change ranking-up">▲${diff}</span>`;
+                } else if (prevEntry.rank < entry.rank) {
+                    const diff = entry.rank - prevEntry.rank;
+                    changeHTML = `<span class="ranking-change ranking-down">▼${diff}</span>`;
+                } else {
+                    changeHTML = '<span class="ranking-change ranking-same">-</span>';
+                }
+            }
+
+            // 매출 포맷
+            const salesText = entry.sales >= 100000000
+                ? (entry.sales / 100000000).toFixed(1) + '억'
+                : (entry.sales / 10000).toFixed(0) + '만';
+
+            // 셀 하이라이트
+            let bgClass = '';
+            if (rank === 1) bgClass = 'ranking-highlight-1';
+            else if (rank === 2) bgClass = 'ranking-highlight-2';
+            else if (rank === 3) bgClass = 'ranking-highlight-3';
+
+            const dotColor = storeColorMap[entry.store] || '#94A3B8';
+            cells += `<td class="ranking-cell ${bgClass}">
+                <div class="ranking-store-name">
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:3px;vertical-align:middle"></span>
+                    ${entry.store}${changeHTML}
+                </div>
+                <div class="ranking-sales">${salesText}</div>
+            </td>`;
+        });
+
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+    }
+}
+
+// =====================================================
+// 메인 탭 전환
+// =====================================================
+function switchMainTab(tabId) {
+    document.querySelectorAll('.main .tabs .tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.main .tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === 'tab-' + tabId);
+    });
+    if (tabId === 'daily' && !dailyDataLoaded) {
+        loadDailyData();
+    }
+}
+
+// =====================================================
+// 일별 매출 탭 (가로=매장명, 세로=날짜)
+// =====================================================
+let dailyDataLoaded = false;
+let dailyRawRows = [];
+
+const dailyStoreFilter = 'store_name=in.(' + DAILY_STORE_ORDER.map(s => `"${s}"`).join(',') + ')';
+
+async function fetchSupabaseDaily(bar, prog) {
+    const startDate = '2026-01-01';
+    const today = new Date().toISOString().slice(0, 10);
+    let allRows = [];
+    let offset = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        try {
+            const data = await sbFetch(
+                `select=sale_date,store_name,actual_sale_amount` +
+                `&sale_date=gte.${startDate}&sale_date=lte.${today}` +
+                `&${dailyStoreFilter}` +
+                `&order=sale_date.asc&limit=${pageSize}&offset=${offset}`
+            );
+            if (!data || data.length === 0) { hasMore = false; break; }
+            allRows = allRows.concat(data);
+            offset += pageSize;
+            if (bar) bar.style.width = Math.min(90, 20 + (offset / 3000) * 70) + '%';
+            if (prog) prog.textContent = `${allRows.length.toLocaleString()}건 로드됨...`;
+            if (data.length < pageSize) hasMore = false;
+        } catch (e) {
+            console.error('Daily fetch error:', e);
+            hasMore = false;
+        }
+    }
+    return allRows;
+}
+
+function aggregateDaily(rows) {
+    const agg = {};
+    rows.forEach(row => {
+        const store = row.store_name;
+        if (!DAILY_STORE_ORDER.includes(store)) return;
+        const date = row.sale_date ? row.sale_date.substring(0, 10) : null;
+        if (!date) return;
+        const key = `${date}|${store}`;
+        if (!agg[key]) agg[key] = { date, store, totalSales: 0 };
+        agg[key].totalSales += (row.actual_sale_amount || 0);
+    });
+    return agg;
+}
+
+async function loadDailyData() {
+    const loading = document.getElementById('daily-loading');
+    const content = document.getElementById('daily-content');
+    const bar = document.getElementById('daily-loading-bar');
+    const prog = document.getElementById('daily-loading-progress');
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    bar.style.width = '5%';
+
+    try {
+        prog.textContent = '2026년 일별 매출 데이터 로딩 중...';
+        bar.style.width = '20%';
+
+        const rows = await fetchSupabaseDaily(bar, prog);
+        bar.style.width = '80%';
+        prog.textContent = `${rows.length.toLocaleString()}건 집계 + 보정 중...`;
+
+        const dailyAgg = aggregateDaily(rows);
+        const dailyMap = {};
+        Object.values(dailyAgg).forEach(d => {
+            const ratio = storeCalibration[d.store] || 1;
+            const key = d.date + '|' + d.store;
+            dailyMap[key] = Math.round(d.totalSales * ratio);
+        });
+
+        dailyRawRows = rows;
+        dailyRawRows._dailyMap = dailyMap;
+        const dates = [...new Set(rows.map(r => r.sale_date?.substring(0, 10)).filter(Boolean))].sort();
+        dailyRawRows._dates = dates.length ? dates : [];
+
+        bar.style.width = '100%';
+        prog.textContent = dates.length ? '완료!' : '데이터 없음 (2026년 일별 데이터가 Supabase에 아직 없을 수 있습니다)';
+        dailyDataLoaded = true;
+
+        renderDailyTable();
+    } catch (e) {
+        console.error('loadDailyData error:', e);
+        prog.textContent = '오류: ' + (e.message || '데이터 로드 실패');
+    }
+
+    setTimeout(() => {
+        loading.style.display = 'none';
+        content.style.display = 'block';
+    }, 200);
+}
+
+function renderDailyTable() {
+    if (!dailyDataLoaded || !dailyRawRows._dailyMap) return;
+
+    const dailyMap = dailyRawRows._dailyMap;
+    const dates = dailyRawRows._dates;
+    const thead = document.getElementById('daily-sales-thead');
+    const tbody = document.getElementById('daily-sales-tbody');
+    const infoEl = document.getElementById('daily-info');
+    const subtitleEl = document.getElementById('daily-subtitle');
+
+    const lastDate = dates.length ? dates[dates.length - 1] : '-';
+    infoEl.textContent = dates.length ? `2026-01-01 ~ ${lastDate} (총 ${dates.length}일)` : '데이터 없음';
+    subtitleEl.textContent = `Supabase 업데이트 기준: ${lastDate}까지 · 매장명 가로, 일자 세로`;
+
+    thead.innerHTML = '<tr><th>일자</th>' +
+        DAILY_STORE_ORDER.map(s => `<th>${s}</th>`).join('') +
+        '<th style="background:#EEF2FF"><strong>합계</strong></th></tr>';
+
+    tbody.innerHTML = '';
+    if (!dates.length) {
+        tbody.innerHTML = '<tr><td colspan="' + (DAILY_STORE_ORDER.length + 2) + '" style="padding:40px;text-align:center;color:var(--text-secondary)">2026년 일별 매출 데이터가 없습니다. Supabase에 데이터가 입력되면 표시됩니다.</td></tr>';
+        return;
+    }
+    dates.forEach(date => {
+        const tr = document.createElement('tr');
+        let rowTotal = 0;
+        let cells = `<td style="font-weight:600">${date}</td>`;
+        DAILY_STORE_ORDER.forEach(store => {
+            const key = date + '|' + store;
+            const val = dailyMap[key] || 0;
+            rowTotal += val;
+            cells += `<td style="text-align:right">${val > 0 ? val.toLocaleString() : '-'}</td>`;
+        });
+        cells += `<td style="text-align:right;background:#EEF2FF;font-weight:600">${rowTotal > 0 ? rowTotal.toLocaleString() : '-'}</td>`;
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+    });
+
+    const totalTr = document.createElement('tr');
+    totalTr.style.cssText = 'background:#F8FAFC;font-weight:700;border-top:2px solid var(--primary)';
+    let totalCells = '<td style="background:#F8FAFC">합계</td>';
+    let grandTotal = 0;
+    DAILY_STORE_ORDER.forEach(store => {
+        let colTotal = 0;
+        dates.forEach(date => {
+            const key = date + '|' + store;
+            colTotal += dailyMap[key] || 0;
+        });
+        grandTotal += colTotal;
+        totalCells += `<td style="text-align:right;color:var(--primary)">${colTotal > 0 ? colTotal.toLocaleString() : '-'}</td>`;
+    });
+    totalCells += `<td style="text-align:right;background:#EEF2FF;color:var(--primary);font-weight:700">${grandTotal.toLocaleString()}</td>`;
+    totalTr.innerHTML = totalCells;
+    tbody.appendChild(totalTr);
+}
+
+window.addEventListener('load', () => loadSalesData());
+</script>
+</body>
+</html>
