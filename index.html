@@ -523,6 +523,19 @@
             font-size: 11.5px;
             padding: 8px 10px;
         }
+        #estimate-table thead th:first-child,
+        #estimate-table tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            min-width: 90px;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+        }
+        #estimate-table thead th:first-child {
+            background: #F8FAFC;
+            z-index: 3;
+        }
 
         .store-type {
             display: inline-block;
@@ -1144,6 +1157,13 @@
                         <thead id="daily-sales-thead"></thead>
                         <tbody id="daily-sales-tbody"></tbody>
                     </table>
+                </div>
+
+                <!-- 매장별 7요일 패턴 기반 월 마감 매출 추정 -->
+                <div class="chart-card animate-in" style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border)">
+                    <div class="chart-title"><i class="fas fa-chart-line"></i> 매장별 월 마감 매출 추정 (7요일 패턴 기반)</div>
+                    <div class="chart-subtitle" id="estimate-subtitle">기준일 시점 데이터로 당월 마감 매출 추정 · 매일 업데이트</div>
+                    <div id="estimate-content"></div>
                 </div>
             </div>
         </div>
@@ -2344,6 +2364,115 @@ function renderDailyTable() {
     totalCells += `<td style="text-align:right;background:#EEF2FF;color:var(--primary);font-weight:700">${grandTotal.toLocaleString()}</td>`;
     totalTr.innerHTML = totalCells;
     tbody.appendChild(totalTr);
+
+    renderMonthlyEstimate(dailyMap, dates);
+}
+
+function renderMonthlyEstimate(dailyMap, dates) {
+    const container = document.getElementById('estimate-content');
+    const subtitleEl = document.getElementById('estimate-subtitle');
+    if (!container || !dates.length) {
+        if (container) container.innerHTML = '<p style="padding:24px;text-align:center;color:var(--text-secondary)">일별 데이터가 없어 추정할 수 없습니다.</p>';
+        return;
+    }
+
+    const refDateStr = dates[dates.length - 1];
+    const [y, m] = refDateStr.split('-').map(Number);
+    const refDate = new Date(y, m - 1, parseInt(refDateStr.slice(8, 10)));
+    const monthKey = `${y}-${String(m).padStart(2, '0')}`;
+
+    const firstOfMonth = `${monthKey}-01`;
+    const analysisDates = dates.filter(d => d >= firstOfMonth && d <= refDateStr);
+
+    const lastDayOfMonth = new Date(y, m, 0).getDate();
+    const lastDateStr = `${monthKey}-${String(lastDayOfMonth).padStart(2, '0')}`;
+
+    function getDayOfWeek(dateStr) {
+        const [yr, mo, da] = dateStr.split('-').map(Number);
+        return new Date(yr, mo - 1, da).getDay();
+    }
+
+    function countRemainingWeekdays() {
+        const counts = [0, 0, 0, 0, 0, 0, 0];
+        const nextDay = new Date(refDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        while (nextDay.getMonth() === m - 1) {
+            counts[nextDay.getDay()]++;
+            nextDay.setDate(nextDay.getDate() + 1);
+        }
+        return counts;
+    }
+
+    const remainingByWd = countRemainingWeekdays();
+
+    const results = [];
+    DAILY_STORE_ORDER.forEach(store => {
+        let cumulative = 0;
+        const byWd = Array(7).fill(0);
+        const countByWd = Array(7).fill(0);
+
+        analysisDates.forEach(date => {
+            const key = date + '|' + store;
+            const val = dailyMap[key] || 0;
+            cumulative += val;
+            const wd = getDayOfWeek(date);
+            byWd[wd] += val;
+            if (val > 0) countByWd[wd]++;
+        });
+
+        const dailyAvg = analysisDates.length > 0 ? cumulative / analysisDates.length : 0;
+        const avgByWd = byWd.map((s, i) => countByWd[i] > 0 ? s / countByWd[i] : dailyAvg);
+        let estimated = cumulative;
+        for (let wd = 0; wd < 7; wd++) {
+            estimated += remainingByWd[wd] * avgByWd[wd];
+        }
+
+        const target = (HDEX_TARGETS_2026[store] || {})[monthKey] || 0;
+        const rate = target > 0 ? (estimated / target * 100) : 0;
+
+        results.push({
+            store,
+            cumulative: Math.round(cumulative),
+            estimated: Math.round(estimated),
+            target,
+            rate
+        });
+    });
+
+    subtitleEl.textContent = `기준일: ${refDateStr} · 분석기간: ${firstOfMonth} ~ ${refDateStr} · 매일 업데이트`;
+
+    const fmt = v => v > 0 ? v.toLocaleString() : '-';
+    const totCum = results.reduce((s, r) => s + r.cumulative, 0);
+    const totEst = results.reduce((s, r) => s + r.estimated, 0);
+    const totTgt = results.reduce((s, r) => s + r.target, 0);
+    const totRate = totTgt > 0 ? (totEst / totTgt * 100) : 0;
+    const totRateColor = totRate >= 100 ? '#059669' : totRate >= 80 ? '#D97706' : '#DC2626';
+
+    let html = '<div class="table-scroll" style="max-height:400px;overflow:auto;margin-top:16px">';
+    html += '<table class="data-table" id="estimate-table" style="font-size:11.5px">';
+    html += '<thead><tr><th>구분</th>' + results.map(r => `<th>${r.store}</th>`).join('') + '<th style="background:#EEF2FF">합계</th></tr></thead><tbody>';
+
+    html += '<tr><td style="font-weight:600">당월누계</td>';
+    results.forEach(r => { html += `<td style="text-align:right">${fmt(r.cumulative)}</td>`; });
+    html += `<td style="text-align:right;background:#EEF2FF;font-weight:700">${totCum.toLocaleString()}</td></tr>`;
+
+    html += '<tr><td style="font-weight:600">예상 마감</td>';
+    results.forEach(r => { html += `<td style="text-align:right;font-weight:700">${fmt(r.estimated)}</td>`; });
+    html += `<td style="text-align:right;background:#EEF2FF;font-weight:700;color:var(--primary)">${totEst.toLocaleString()}</td></tr>`;
+
+    html += '<tr><td style="font-weight:600">당월 목표</td>';
+    results.forEach(r => { html += `<td style="text-align:right">${fmt(r.target)}</td>`; });
+    html += `<td style="text-align:right;background:#EEF2FF;font-weight:700">${totTgt.toLocaleString()}</td></tr>`;
+
+    html += '<tr><td style="font-weight:600">예상 달성률</td>';
+    results.forEach(r => {
+        const rateColor = r.rate >= 100 ? '#059669' : r.rate >= 80 ? '#D97706' : '#DC2626';
+        html += `<td style="text-align:right;font-weight:700;color:${rateColor}">${r.target > 0 ? r.rate.toFixed(1) + '%' : '-'}</td>`;
+    });
+    html += `<td style="text-align:right;background:#EEF2FF;font-weight:700;color:${totRateColor}">${totRate.toFixed(1)}%</td></tr>`;
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
 }
 
 function scheduleDailyRefresh() {
