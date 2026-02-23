@@ -74,3 +74,18 @@ open /Users/df_ym1/hdex-sales-dashboard/index.html
 cd /Users/df_ym1/hdex-sales-dashboard && python3 -m http.server 8877
 # → http://localhost:8877/
 ```
+
+---
+
+## 외부 공유 링크 (GitHub Pages)
+
+1. **GitHub에 저장소 생성:** https://github.com/new → 이름 `hdex-sales-dashboard`
+2. **배포 스크립트 실행:**
+   ```bash
+   cd /Users/df_ym1/hdex-sales-dashboard
+   ./publish.sh kimym-df   # 본인 GitHub 사용자명으로 변경
+   ```
+3. **GitHub Pages 활성화:** 저장소 Settings → Pages → Branch: main 선택
+4. **공유 URL:** `https://kimym-df.github.io/hdex-sales-dashboard/` (사용자명에 맞게 변경)
+
+자세한 내용은 [DEPLOY.md](DEPLOY.md) 참고.

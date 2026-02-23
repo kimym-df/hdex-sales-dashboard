@@ -985,7 +985,8 @@
         <h1><i class="fas fa-cash-register"></i> HDEX 매출 분석 대시보드</h1>
         <div class="header-meta">
             <span><i class="fas fa-database"></i> 데이터: 2025 엑셀 확정 / 2026 Supabase</span>
-            <span><i class="fas fa-clock"></i> 최종 업데이트: 2026.02.12</span>
+            <span id="header-last-load"><i class="fas fa-clock"></i> 마지막 로드: -</span>
+            <span id="header-next-refresh" style="font-size:12px;opacity:0.8"><i class="fas fa-sync-alt"></i> 매일 08:00 자동 갱신</span>
         </div>
     </div>
 </header>
@@ -1196,7 +1197,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 async function sbFetch(params) {
     const url = `${SUPABASE_URL}/rest/v1/sales_online?${params}`;
     const res = await fetch(url, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        cache: 'no-store'
     });
     return res.json();
 }
@@ -1384,15 +1386,9 @@ async function loadSalesData() {
         salesDataLoaded = true;
 
     } else {
-        // ── 2026년: Supabase 조회 + 보정비율 적용 ──
-        // 1단계: 보정비율 학습 (아직 안 했으면)
-        if (!calibrationReady) {
-            await learnCalibration(bar, prog);
-        }
-
-        // 2단계: 2026 데이터 fetch
+        // ── 2026년: Supabase 2026 데이터만 조회 (속도 최적화) ──
         prog.textContent = '2026년 Supabase 데이터 로딩 중...';
-        bar.style.width = '50%';
+        bar.style.width = '30%';
 
         const rows2026 = await fetchSupabaseYear('2026', bar, prog, storeFilterParam2026);
 
@@ -1447,6 +1443,7 @@ async function loadSalesData() {
         loading.style.display = 'none';
         content.style.display = 'block';
         renderSalesCharts();
+        updateLastLoadTime();
     }, 300);
 }
 
@@ -2269,7 +2266,28 @@ async function loadDailyData() {
     setTimeout(() => {
         loading.style.display = 'none';
         content.style.display = 'block';
+        updateLastLoadTime();
     }, 200);
+}
+
+function updateLastLoadTime() {
+    const el = document.getElementById('header-last-load');
+    if (!el) return;
+    const now = new Date();
+    const str = now.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.innerHTML = '<i class="fas fa-clock"></i> 마지막 로드: ' + str;
+}
+
+function refreshActiveTab() {
+    const salesPanel = document.getElementById('tab-sales');
+    const dailyPanel = document.getElementById('tab-daily');
+    if (salesPanel && salesPanel.classList.contains('active')) {
+        salesDataLoaded = false;
+        loadSalesData();
+    } else if (dailyPanel && dailyPanel.classList.contains('active')) {
+        dailyDataLoaded = false;
+        loadDailyData();
+    }
 }
 
 function renderDailyTable() {
@@ -2328,7 +2346,22 @@ function renderDailyTable() {
     tbody.appendChild(totalTr);
 }
 
-window.addEventListener('load', () => loadSalesData());
+function scheduleDailyRefresh() {
+    const now = new Date();
+    const next8 = new Date(now);
+    next8.setHours(8, 0, 0, 0);
+    if (now >= next8) next8.setDate(next8.getDate() + 1);
+    const msUntil = next8 - now;
+    setTimeout(() => {
+        refreshActiveTab();
+        setInterval(refreshActiveTab, 24 * 60 * 60 * 1000);
+    }, msUntil);
+}
+
+window.addEventListener('load', () => {
+    loadSalesData();
+    scheduleDailyRefresh();
+});
 </script>
 </body>
 </html>
