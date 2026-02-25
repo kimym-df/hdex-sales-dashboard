@@ -1,0 +1,27 @@
+name: Daily 8AM Update
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update timestamp
+        run: |
+          echo "Last sync: $(date -u '+%Y-%m-%d %H:%M:%S UTC') (8AM KST 기준 매출 반영)" > last-sync.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last-sync.txt
+          git diff --staged --quiet || git commit -m "chore: daily sync $(date -u '+%Y-%m-%d')"
+          git push
