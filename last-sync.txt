@@ -1,2 +1,1 @@
-Last sync: 2026-02-25 23:55:46 UTC (8AM KST 기준 매출 반영)
-GitHub Actions가 매일 오전 8시(KST)에 이 파일을 갱신하여 배포를 업데이트합니다.
+Last sync: 2026-02-26 23:56:45 UTC (8AM KST 기준 매출 반영)
