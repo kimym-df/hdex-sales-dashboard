@@ -999,7 +999,7 @@
         <div class="header-meta">
             <span><i class="fas fa-database"></i> 데이터: 2025 엑셀 확정 / 2026 Supabase</span>
             <span id="header-last-load"><i class="fas fa-clock"></i> 마지막 로드: -</span>
-            <span id="header-next-refresh" style="font-size:12px;opacity:0.8"><i class="fas fa-sync-alt"></i> 매일 08:00 자동 갱신</span>
+            <span id="header-next-refresh" style="font-size:12px;opacity:0.8"><i class="fas fa-sync-alt"></i> 매일 09:00 자동 갱신</span>
         </div>
     </div>
 </header>
@@ -2477,10 +2477,10 @@ function renderMonthlyEstimate(dailyMap, dates) {
 
 function scheduleDailyRefresh() {
     const now = new Date();
-    const next8 = new Date(now);
-    next8.setHours(8, 0, 0, 0);
-    if (now >= next8) next8.setDate(next8.getDate() + 1);
-    const msUntil = next8 - now;
+    const next9 = new Date(now);
+    next9.setHours(9, 0, 0, 0);
+    if (now >= next9) next9.setDate(next9.getDate() + 1);
+    const msUntil = next9 - now;
     setTimeout(() => {
         refreshActiveTab();
         setInterval(refreshActiveTab, 24 * 60 * 60 * 1000);
